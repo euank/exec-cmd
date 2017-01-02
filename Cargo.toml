@@ -1,0 +1,19 @@
+[package]
+name = "exec-cmd"
+version = "0.1.0"
+authors = ["Euan Kemp <euank@euank.com>"]
+
+[dependencies]
+ssh2 = "*"
+env_logger = "*"
+iron = "*"
+serde = "*"
+serde_derive = "*"
+serde_json = "*"
+log = "*"
+
+[dependencies.bodyparser]
+git = "https://github.com/iron/body-parser.git"
+
+[dependencies.logger]
+git = "https://github.com/iron/logger.git"
