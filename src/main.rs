@@ -4,6 +4,7 @@
 extern crate serde_derive;
 extern crate serde_json;
 extern crate iron;
+extern crate env_logger;
 extern crate bodyparser;
 extern crate serde;
 #[macro_use]
@@ -94,6 +95,7 @@ fn exec(execer: execer::sshexecer::SSHExecer, req: &mut Request) -> IronResult<R
 }
 
 fn main() {
+    env_logger::init().unwrap();
     let _ = env::var("CMD_HOST").expect("CMD_HOST env variable must be set");
     let _ = env::var("CMD_USER").expect("CMD_USER env variable must be set");
 
