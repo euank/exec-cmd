@@ -82,16 +82,16 @@ fn exec(execer: execer::sshexecer::SSHExecer, req: &mut Request) -> IronResult<R
         }
     };
 
-    let mut result_buf: &mut [u8] = &mut [];
-    match serde_json::to_writer(&mut result_buf, &er) {
+    match serde_json::to_string(&er) {
         Err(e) => {
             warn!("error marshaling: {}", e);
             return Err(IronError::new(Error { error: "error marshalling response".to_string() },
                                       status::InternalServerError));
         }
-        _ => {}
-    };
-    Ok(Response::with((status::Ok, result_buf as &[u8])))
+        Ok(s) => {
+            Ok(Response::with((status::Ok, s)))
+        }
+    }
 }
 
 fn main() {

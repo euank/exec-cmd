@@ -2,6 +2,7 @@ use ssh2::Session;
 use std::error::Error;
 use std::net::TcpStream;
 use std::fmt;
+use std::io::Read;
 
 // TODO tcp connection pool
 pub struct SSHExecer {
@@ -17,10 +18,13 @@ impl SSHExecer {
         }
     }
 
-    pub fn exec(&self, namespace: String, cmd: String) -> Result<(Option<String>, Option<String>, i32), SSHExecErrors> {
+    pub fn exec(&self,
+                namespace: String,
+                cmd: String)
+                -> Result<(Option<String>, Option<String>, i32), SSHExecErrors> {
         let tcp = match TcpStream::connect::<&str>(self.host.as_ref()) {
             Ok(x) => x,
-            Err(e) => {
+            Err(_) => {
                 return Err(SSHExecErrors::TCPConnectError);
             }
         };
@@ -30,6 +34,7 @@ impl SSHExecer {
                 return Err(SSHExecErrors::SessionCreationError);
             }
         };
+
         match sess.handshake(&tcp) {
             Err(_) => {
                 return Err(SSHExecErrors::HandshakeError);
@@ -37,17 +42,45 @@ impl SSHExecer {
             _ => {}
         };
 
-        println!("TODO: I would do the ssh exec thing with {}", cmd);
+        match sess.userauth_agent(&self.user) {
+            Err(_) => {
+                return Err(SSHExecErrors::SessionCreationError);
+            }
+            _ => {}
+        };
 
-        Ok((None, None, 0))
+
+        let mut channel = match sess.channel_session() {
+            Err(_) => {
+                return Err(SSHExecErrors::SessionCreationError);
+            }
+            Ok(x) => x,
+        };
+
+        match channel.exec(&format!("{} {}", namespace, cmd)) {
+            Err(_) => {
+                return Err(SSHExecErrors::ChannelExecError);
+            }
+            _ => {}
+        };
+        let mut output = String::new();
+        channel.read_to_string(&mut output).unwrap();
+        // TODO channel.stderr
+        let exit_code = match channel.exit_status() {
+            Err(_) => -1,
+            Ok(e) => e,
+        };
+
+        Ok((Some(output), None, exit_code))
     }
 }
 
 #[derive(Debug,Clone)]
-enum SSHExecErrors {
+pub enum SSHExecErrors {
     TCPConnectError,
     SessionCreationError,
     HandshakeError,
+    ChannelExecError,
 }
 
 impl Error for SSHExecErrors {
@@ -59,6 +92,7 @@ impl Error for SSHExecErrors {
             SSHExecErrors::TCPConnectError => "tcp connect error",
             SSHExecErrors::SessionCreationError => "ssh session creation error",
             SSHExecErrors::HandshakeError => "ssh handshake error",
+            SSHExecErrors::ChannelExecError => "channel exec error",
         }
     }
 }
