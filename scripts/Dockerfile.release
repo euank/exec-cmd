@@ -1,0 +1,10 @@
+FROM debian:jessie
+
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt
+
+RUN useradd -d /app app
+
+COPY ./target/release/exec-cmd /app/exec-cmd
+
+USER app
+ENTRYPOINT ["/app/exec-cmd"]
