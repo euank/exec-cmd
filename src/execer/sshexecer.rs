@@ -2,19 +2,22 @@ use ssh2::Session;
 use std::error::Error;
 use std::net::TcpStream;
 use std::fmt;
+use std::path::Path;
 use std::io::Read;
 
 // TODO tcp connection pool
 pub struct SSHExecer {
     host: String,
     user: String,
+    userauth_file: Option<String>,
 }
 
 impl SSHExecer {
-    pub fn new(host: String, user: String) -> Self {
+    pub fn new(host: String, user: String, userauth_file: Option<String>) -> Self {
         SSHExecer {
             host: host,
             user: user,
+            userauth_file: userauth_file,
         }
     }
 
@@ -42,11 +45,23 @@ impl SSHExecer {
             _ => {}
         };
 
-        match sess.userauth_agent(&self.user) {
-            Err(_) => {
-                return Err(SSHExecErrors::SessionCreationError);
+        match self.userauth_file {
+            Some(ref f) => {
+                match sess.userauth_pubkey_file(&self.user, None, Path::new(&f), None) {
+                    Err(e) => {
+                        return Err(SSHExecErrors::SessionCreationError);
+                    }
+                    _ => {}
+                }
             }
-            _ => {}
+            None => {
+                match sess.userauth_agent(&self.user) {
+                    Err(_) => {
+                        return Err(SSHExecErrors::SessionCreationError);
+                    }
+                    _ => {}
+                };
+            }
         };
 
 

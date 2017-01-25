@@ -103,7 +103,11 @@ fn main() {
         // TODO move out of closure
         let ssh_host = env::var("CMD_HOST").expect("CMD_HOST env variable must be set");
         let ssh_user = env::var("CMD_USER").expect("CMD_USER env variable must be set");
-        let ssh_execer = SSHExecer::new(ssh_host, ssh_user);
+        let userauth_file = match env::var("CMD_PEM") {
+            Ok(f) => Some(f),
+            Err(_) => None,
+        };
+        let ssh_execer = SSHExecer::new(ssh_host, ssh_user, userauth_file);
         exec(ssh_execer, req)
     });
     Iron::new(chain).http("0.0.0.0:8080").unwrap();
